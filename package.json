@@ -1,49 +1,91 @@
-{
-  "name": "test-evals",
-  "private": true,
-  "workspaces": {
-    "packages": [
-      "apps/*",
-      "packages/*"
-    ],
-    "catalog": {
-      "dotenv": "^17.2.2",
-      "zod": "^4.1.13",
-      "typescript": "^6",
-      "@types/bun": "^1.3.4",
-      "better-auth": "1.5.5",
-      "lucide-react": "^0.546.0",
-      "next-themes": "^0.4.6",
-      "react": "^19.2.3",
-      "react-dom": "^19.2.3",
-      "sonner": "^2.0.5",
-      "@types/react": "^19.2.10",
-      "@types/react-dom": "^19.2.3",
-      "tailwindcss": "^4.1.18"
-    }
-  },
-  "type": "module",
-  "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "check-types": "turbo check-types",
-    "dev:web": "turbo -F web dev",
-    "dev:server": "turbo -F server dev",
-    "db:push": "turbo -F @test-evals/db db:push",
-    "db:studio": "turbo -F @test-evals/db db:studio",
-    "db:generate": "turbo -F @test-evals/db db:generate",
-    "db:migrate": "turbo -F @test-evals/db db:migrate"
-  },
-  "dependencies": {
-    "@test-evals/env": "workspace:*",
-    "dotenv": "catalog:",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@test-evals/config": "workspace:*",
-    "@types/bun": "catalog:",
-    "turbo": "^2.8.12",
-    "typescript": "catalog:"
-  },
-  "packageManager": "bun@1.3.5"
+export type PromptStrategy = "zero_shot" | "few_shot" | "cot";
+
+export interface Medication {
+  name: string;
+  dose: string;
+  frequency: string;
+  route: string;
+}
+
+export interface Diagnosis {
+  description: string;
+  icd10?: string | null;
+}
+
+export interface FollowUp {
+  interval_days: number | null;
+  reason: string | null;
+}
+
+export interface Vitals {
+  bp: string | null;
+  hr: number | null;
+  temp_f: number | null;
+  spo2: number | null;
+}
+
+export interface ExtractionResult {
+  chief_complaint: string;
+  vitals: Vitals;
+  medications: Medication[];
+  diagnoses: Diagnosis[];
+  plan: string[];
+  follow_up: FollowUp;
+}
+
+export interface AttemptLog {
+  attempt: number;
+  success: boolean;
+  error?: string;
+  latency_ms: number;
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
+}
+
+export interface FieldScores {
+  chief_complaint: number;
+  vitals: number;
+  medications: number;
+  diagnoses: number;
+  plan: number;
+  follow_up: number;
+  overall: number;
+}
+
+export interface EvaluationResult {
+  transcript_id: string;
+  scores: FieldScores;
+  hallucination_count: number;
+  schema_failed: boolean;
+  notes?: string[];
+}
+
+export interface RunSummary {
+  id: string;
+  strategy: PromptStrategy;
+  model: string;
+  status: "pending" | "running" | "completed" | "failed";
+  total_cases: number;
+  completed_cases: number;
+  aggregate_score: number;
+  total_cost_usd: number;
+  total_duration_ms: number;
+  created_at: string;
+}
+
+export interface RunCaseResult {
+  transcript_id: string;
+  prediction: ExtractionResult;
+  gold: ExtractionResult;
+  evaluation: EvaluationResult;
+  attempts: AttemptLog[];
+}
+
+export interface CreateRunDto {
+  strategy: PromptStrategy;
+  model: string;
+  dataset_filter?: string[];
+  force?: boolean;
 }
